@@ -448,9 +448,9 @@ end
 -- ldoc.module_file establishes a partial ordering where the
 -- master module files are processed first.
 local function reorder_module_file ()
-   if args.module_file then
+   if ldoc.module_file then
       local mf = {}
-      for mname, f in pairs(args.module_file) do
+      for mname, f in pairs(ldoc.module_file) do
          local fullpath = abspath(f)
          mf[fullpath] = true
       end
