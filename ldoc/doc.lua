@@ -345,7 +345,7 @@ function File:finish()
                -- if it was a class, then if the name is unqualified then it becomes
                -- 'Class:foo' (unless flagged as being a constructor, static or not a function)
                if doc.class_tag(stype) or classmod then
-                  if not item.name:match '[:%.]' then -- not qualified name!
+                  if not item.name:match '[:%.]' and not doc.ldoc.strip_metamethod_prefix then -- not qualified name!
                      -- a class is either a @type section or a @classmod module. Is this a _method_?
                      local class = classmod and this_mod.name or this_section.name
                      local static = item.tags.constructor or item.tags.static or item.type ~= 'function'
@@ -620,6 +620,9 @@ function Item:finish()
    local tags = self.tags
    local quote = tools.quote
    self.name = read_del(tags,'name')
+   if doc.ldoc.strip_metamethod_prefix then
+      self.name = self.name:gsub('.*:', '')
+   end
    self.type = read_del(tags,'class')
    self.modifiers = extract_tag_modifiers(tags)
    self.usage = read_del(tags,'usage')
