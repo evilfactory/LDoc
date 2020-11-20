@@ -769,7 +769,7 @@ function Item:finish()
          end
       end
       self.params = params
-      self.args = build_arg_list (names,pmods)
+      self.args = (doc.ldoc.simple_args_string and build_simple_arg_list (names) or build_arg_list (names,pmods))
    end
    if self.ret then
       self:build_return_groups()
@@ -816,6 +816,10 @@ function split_iden (name)
    else
       return pname,field
    end
+end
+
+function build_simple_arg_list (names)
+   return "("..table.concat(names,", ")..")"
 end
 
 function build_arg_list (names,pmods)
