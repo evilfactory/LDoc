@@ -27,7 +27,6 @@ local tablex = require 'pl.tablex'
 
 -- Penlight compatibility
 utils.unpack = utils.unpack or unpack or table.unpack
-local append = table.insert
 local lapp = require 'pl.lapp'
 
 local version = '1.4.6'
@@ -37,38 +36,44 @@ app.require_here()
 
 --- @usage
 local usage = [[
-ldoc, a documentation generator for Lua, vs ]]..version..[[
+ldoc, a documentation generator for Lua, v]]..version..[[
 
-  -d,--dir (default doc) output directory
-  -o,--output  (default 'index') output name
-  -v,--verbose          verbose
-  -a,--all              show local functions, etc, in docs
-  -q,--quiet            suppress output
-  -m,--module           module docs as text
-  -s,--style (default !) directory for style sheet (ldoc.css)
-  -l,--template (default !) directory for template (ldoc.ltp)
-  -p,--project (default ldoc) project name
-  -t,--title (default Reference) page title
-  -f,--format (default plain) formatting - can be markdown, discount or plain
-  -b,--package  (default .) top-level package basename (needed for module(...))
-  -x,--ext (default html) output file extension
-  -c,--config (default config.ld) configuration name
-  -u,--unqualified     don't show package name in sidebar links
-  -i,--ignore ignore any 'no doc comment or no module' warnings
-  -X,--not_luadoc break LuaDoc compatibility. Descriptions may continue after tags.
-  -D,--define (default none) set a flag to be used in config.ld
-  -C,--colon use colon style
-  -N,--no_args_infer  don't infer arguments from source
-  -B,--boilerplate ignore first comment in source files
-  -M,--merge allow module merging
-  -S,--simple no return or params, no summary
-  -O,--one one-column output layout
-  --date (default system) use this date in generated doc
-  --dump                debug output dump
-  --filter (default none) filter output as Lua data (e.g pl.pretty.dump)
-  --tags (default none) show all references to given tags, comma-separated
-  --fatalwarnings non-zero exit status on any warning
-  --testing  reproducible build; no date or version on output
+  Invocation:
+    ldoc [options] <file>
+    ldoc --version
+
+  Options:
+    -d,--dir		(default doc) output directory
+    -o,--output		(default 'index') output name
+    -v,--verbose	verbose
+    -a,--all		show local functions, etc, in docs
+    -q,--quiet		suppress output
+    -m,--module		module docs as text
+    -s,--style		(default !) directory for style sheet (ldoc.css)
+    -l,--template	(default !) directory for template (ldoc.ltp)
+    -p,--project	(default ldoc) project name
+    -t,--title		(default Reference) page title
+    -f,--format		(default plain) formatting - can be markdown, discount or plain
+    -b,--package	(default .) top-level package basename (needed for module(...))
+    -x,--ext		(default html) output file extension
+    -c,--config		(default config.ld) configuration name
+    -u,--unqualified	don't show package name in sidebar links
+    -i,--ignore		ignore any 'no doc comment or no module' warnings
+    -X,--not_luadoc	break LuaDoc compatibility. Descriptions may continue after tags.
+    -D,--define		(default none) set a flag to be used in config.ld
+    -C,--colon		use colon style
+    -N,--no_args_infer	don't infer arguments from source
+    -B,--boilerplate	ignore first comment in source files
+    -M,--merge		allow module merging
+    -S,--simple		no return or params, no summary
+    -O,--one		one-column output layout
+    -V,--version	show version information
+    --date		(default system) use this date in generated doc
+    --dump		debug output dump
+    --filter		(default none) filter output as Lua data (e.g pl.pretty.dump)
+    --tags		(default none) show all references to given tags, comma-separated
+    --fatalwarnings	non-zero exit status on any warning
+    --testing		reproducible build; no date or version on output
 
   <file> (string) source file or directory containing source
 
@@ -85,8 +90,13 @@ local global = require 'ldoc.builtin.globals'
 local markup = require 'ldoc.markup'
 local parse = require 'ldoc.parse'
 local KindMap = tools.KindMap
-local Item,File,Module = doc.Item,doc.File,doc.Module
+local Item,File = doc.Item,doc.File
 local quit = utils.quit
+
+if args.version then
+   print('LDoc v' .. version)
+   os.exit(0)
+end
 
 
 local ModuleMap = class(KindMap)
@@ -117,6 +127,7 @@ local file_types = {
    ['.cxx'] = cc,
    ['.C'] = cc,
    ['.mm'] = cc,
+   ['.cs'] = cc,
    ['.moon'] = lang.moon,
 }
 ------- ldoc external API ------------
@@ -165,7 +176,6 @@ local function setup_kinds ()
 end
 
 
-local add_language_extension
 -- hacky way for doc module to be passed options...
 doc.ldoc = ldoc
 
@@ -247,14 +257,15 @@ ldoc_contents = tablex.makeset(ldoc_contents)
 
 local function loadstr (ldoc,txt)
    local chunk, err
-   local load
    -- Penlight's Lua 5.2 compatibility has wobbled over the years...
    if not rawget(_G,'loadin') then -- Penlight 0.9.5
        -- Penlight 0.9.7; no more global load() override
-      load = load or utils.load
+      local load = load or utils.load
       chunk,err = load(txt,'config',nil,ldoc)
    else
+      -- luacheck: push ignore 113
       chunk,err = loadin(ldoc,txt)
+      -- luacheck: pop
    end
    return chunk, err
 end
@@ -266,7 +277,7 @@ local function read_ldoc_config (fname)
    if directory == '' then
       directory = '.'
    end
-   local chunk, err, ok
+   local chunk, err, _
    if args.filter == 'none' then
       print('reading configuration from '..fname)
    end
@@ -275,7 +286,7 @@ local function read_ldoc_config (fname)
       chunk, err = loadstr(ldoc,txt)
       if chunk then
          if args.define ~= 'none' then ldoc[args.define] = true end
-         ok,err = pcall(chunk)
+         _,err = pcall(chunk)
       end
     end
    if err then quit('error loading config file '..fname..': '..err) end
@@ -290,7 +301,6 @@ end
 local quote = tools.quote
 --- processing command line and preparing for output ---
 
-local F
 local file_list = List()
 File.list = file_list
 local config_dir
@@ -305,7 +315,7 @@ if args.module then
    if args.file:match '^%a+$' and global.functions[args.file] then
       args.file = 'global.'..args.file
    end
-   local fullpath,mod,on_docpath = tools.lookup_existing_module_or_function (args.file, doc_path)
+   local fullpath,mod,_ = tools.lookup_existing_module_or_function (args.file, doc_path)
    if not fullpath then
       quit(mod)
    else
@@ -326,7 +336,6 @@ if args.file == '.' then
       print('changing to directory',config_path)
       lfs.chdir(config_path)
    end
-   config_is_read = true
    args.file = ldoc.file or '.'
    if args.file == '.' then
       args.file = lfs.currentdir()
@@ -345,6 +354,9 @@ else
       if err then quit("no "..quote(args.config).." found") end
    end
    -- with user-provided file
+   if args.file == nil then
+      lapp.error('missing required parameter: file')
+   end
    args.file = abspath(args.file)
 end
 
@@ -573,11 +585,13 @@ if ldoc.prettify_files then
    for F in file_list:iter() do
       files:append(F.filename)
       local mod = F.modules[1]
-      local ls = List()
-      for item in mod.items:iter() do
-         ls:append(item.lineno)
+      if mod then
+        local ls = List()
+        for item in mod.items:iter() do
+           ls:append(item.lineno)
+        end
+        linemap[F.filename] = ls
       end
-      linemap[F.filename] = ls
    end
 
    if type(ldoc.prettify_files) == 'table' then
@@ -719,7 +733,7 @@ if args.ext == 'md' then
    if #module_list ~= 1 then
       quit("can currently only generate Markdown output from one module only")
    end
-   if ldoc.template == '!' then
+   if not ldoc.template or ldoc.template == '!' then
       ldoc.template = '!md'
    end
    args.output = module_list[1].name
@@ -775,7 +789,7 @@ local builtin_style, builtin_template = match_bang(args.style),match_bang(args.t
 if builtin_style or builtin_template then
    -- '!' here means 'use built-in templates'
    local user = path.expanduser('~'):gsub('[/\\: ]','_')
-   local tmpdir = path.join(path.is_windows and os.getenv('TMP') or '/tmp','ldoc'..user)
+   local tmpdir = path.join(path.is_windows and os.getenv('TMP') or (os.getenv('TMPDIR') or '/tmp'),'ldoc'..user)
    if not path.isdir(tmpdir) then
       lfs.mkdir(tmpdir)
    end
