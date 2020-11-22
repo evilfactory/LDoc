@@ -17,13 +17,13 @@ local List = require 'pl.List'
 local utils = require 'pl.utils'
 local path = require 'pl.path'
 local stringx = require 'pl.stringx'
-local template = require 'pl.template'
 local tablex = require 'pl.tablex'
 local OrderedMap = require 'pl.OrderedMap'
 local tools = require 'ldoc.tools'
 local markup = require 'ldoc.markup'
 local prettify = require 'ldoc.prettify'
 local doc = require 'ldoc.doc'
+local template = require (doc.ldoc.use_new_templates and 'resty.template.safe' or 'pl.template')
 local unpack = utils.unpack
 local html = {}
 
@@ -280,11 +280,24 @@ function ldoc.source_ref (fun)
 
    -- Runs a template on a module to generate HTML page.
    local function templatize(template_str, ldoc, module)
-      local out, err = template.substitute(template_str, {
-         ldoc = ldoc,
-         module = module,
-         _escape = ldoc.template_escape
-      })
+      local out, err
+      if (ldoc.use_new_templates) then
+         local render, compile_err = template.compile(template_str)
+         if not render then
+            err = compile_err
+         else
+            out = render({
+               ldoc = ldoc,
+               mod = module
+            })
+         end
+      else
+         out, err = template.substitute(template_str, {
+            ldoc = ldoc,
+            module = module,
+            _escape = ldoc.template_escape
+         })
+      end
       if not out then
          quit(("template failed for %s: %s"):format(
                module and module.name or ldoc.output or "index",
@@ -296,7 +309,7 @@ function ldoc.source_ref (fun)
       return cleanup_whitespaces(out)
    end
 
-   function ldoc.include_template(file)
+   function ldoc.include_template(file) -- for use with old templating system
       local text,e = utils.readfile(file)
       if not text then
          quit("unable to include template "..file)

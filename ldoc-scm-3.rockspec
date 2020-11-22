@@ -20,7 +20,7 @@ description = {
 }
 
 dependencies = {
-  "penlight","markdown"
+  "penlight","markdown","lua-resty-template"
 }
 
 build = {
