@@ -249,7 +249,7 @@ local ldoc_contents = {
    'no_space_before_args','simple_args_string','parse_extra','no_lua_ref','sort_modules','use_markdown_titles',
    'unqualified', 'custom_display_name_handler', 'kind_names', 'custom_references', 'strip_metamethod_prefix',
    'dont_escape_underscore','global_lookup','prettify_files','convert_opt', 'user_keywords', 'no_viewed_topic_at_top',
-   'postprocess_html', 'use_new_templates',
+   'postprocess_html', 'use_new_templates', 'pretty_urls',
    'custom_css','version',
    'no_args_infer'
 }

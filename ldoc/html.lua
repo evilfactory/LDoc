@@ -110,6 +110,10 @@ function html.generate_output(ldoc, args, project)
       return name
    end
 
+   function ldoc.to_pretty_url(input)
+      return input:lower()
+   end
+
    -- this generates the internal module/function references
    function ldoc.href(see)
       if see.href then -- explict reference, e.g. to Lua manual
@@ -133,7 +137,7 @@ function html.generate_output(ldoc, args, project)
       if not ldoc.single then
          if module then -- we are in kind/
             if module.type ~= type then -- cross ref to ../kind/
-               base = "../"..kind.."/"
+               base = (ldoc.pretty_urls and '../../' or '../')..kind..'/'
             end
          else -- we are in root: index
             base = kind..'/'
@@ -150,7 +154,11 @@ function html.generate_output(ldoc, args, project)
             end
          end
       end
-      return base..name..'.html'
+      if ldoc.pretty_urls then
+         return ldoc.to_pretty_url(base..name)..'/'
+      else
+         return base..name..'.html'
+      end
    end
 
    function ldoc.include_file (file)
@@ -358,7 +366,12 @@ function ldoc.source_ref (fun)
 
    -- write out the module index
    out = cleanup_whitespaces(out)
-   writefile(args.dir..args.output..args.ext,out)
+
+   if ldoc.pretty_urls then
+      writefile(args.dir..'index.html',out)
+   else
+      writefile(args.dir..args.output..args.ext,out)
+   end
 
    -- in single mode, we exclude any modules since the module has been done;
    -- ext step is then only for putting out any examples or topics
@@ -374,7 +387,7 @@ function ldoc.source_ref (fun)
    -- note that we reset the internal ordering of the 'kinds' so that
    -- e.g. when reading a topic the other Topics will be listed first.
    if css then
-      ldoc.css = '../'..css
+      ldoc.css = (ldoc.pretty_urls and '../../' or '../')..css
    end
    if custom_css then
       ldoc.custom_css = '../'..custom_css
@@ -398,7 +411,13 @@ function ldoc.source_ref (fun)
             ldoc.body = m.postprocess(ldoc.body)
          end
          local out = templatize(module_template, ldoc, m)
-         writefile(args.dir..lkind..'/'..m.name..args.ext,out)
+         if ldoc.pretty_urls then
+            local base = args.dir..ldoc.to_pretty_url(lkind..'/'..m.name)
+            check_directory(base)
+            writefile(base..'/index.html',out)
+         else
+            writefile(args.dir..lkind..'/'..m.name..args.ext,out)
+         end
          restore_ldoc()
       end
    end
