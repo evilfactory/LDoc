@@ -249,7 +249,7 @@ local ldoc_contents = {
    'no_space_before_args','simple_args_string','parse_extra','no_lua_ref','sort_modules','use_markdown_titles',
    'unqualified', 'custom_display_name_handler', 'kind_names', 'custom_references', 'strip_metamethod_prefix',
    'dont_escape_underscore','global_lookup','prettify_files','convert_opt', 'user_keywords', 'no_viewed_topic_at_top',
-   'postprocess_html', 'use_new_templates', 'pretty_urls',
+   'postprocess_html', 'use_new_templates', 'pretty_urls', 'pretty_topic_names',
    'custom_css','version',
    'no_args_infer'
 }
@@ -534,9 +534,12 @@ ldoc.markup = markup.create(ldoc, args.format, args.pretty, ldoc.user_keywords)
 -- They define an item 'body' field (containing the file's text) and a 'postprocess'
 -- field which is used later to convert them into HTML. They may contain @{ref}s.
 
-local function add_special_project_entity (f,tags,process)
+local function add_special_project_entity (f,tags,process,pretty)
    local F = File(f)
    tags.name = path.basename(f)
+   if pretty then
+    tags.name = tags.name:gsub("%..+$", "")
+   end
    local text = utils.readfile(f)
    local item = F:new_item(tags,1)
    if process then
@@ -625,7 +628,7 @@ if type(ldoc.readme) == 'table' then
    process_file_list(ldoc.readme, '*.md', function(f)
       local item, F = add_special_project_entity(f,{
          class = 'topic'
-      }, markup.add_sections)
+      }, markup.add_sections, ldoc.pretty_topic_names)
       -- add_sections above has created sections corresponding to the 2nd level
       -- headers in the readme, which are attached to the File. So
       -- we pass the File to the postprocesser, which will insert the section markers
