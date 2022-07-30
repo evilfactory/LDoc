@@ -276,23 +276,30 @@ function File:finish()
          if display_name == 'end' then
             this_mod.section = nil
          else
-            local summary = item.summary:gsub('%.$','')
             local lookup_name
+            local summary
             if doc.class_tag(item.type) then
                display_name = 'Class '..item.name
                lookup_name = item.name
                item.module = this_mod
                this_mod.items.by_name[item.name] = item
             else
-               display_name = summary
-               lookup_name = summary
+               local summary_type = type(item.summary)
+               local name = item.summary
+               if summary_type == "table" then
+                  local item_summary = item.summary
+                  name = item_summary[1]
+                  summary = item_summary[2]
+               end
+               display_name = name
+               lookup_name = name
                item.summary = ''
             end
             item.display_name = display_name
             this_mod.section = item
             -- the purpose of this little hack is to properly distinguish
             -- between built-in kinds and any user-defined kinds.
-            this_mod.kinds:add_kind(display_name,display_name..' ',nil,item)
+            this_mod.kinds:add_kind(display_name,display_name..' ',nil,item,summary)
             this_mod.sections:append(item)
             this_mod.sections.by_name[lookup_name:gsub('%A','_')] = item
          end
