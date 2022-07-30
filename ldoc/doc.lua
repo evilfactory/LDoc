@@ -342,6 +342,7 @@ function File:finish()
                local this_section = this_mod.section
                if this_section then
                   item.section = this_section.display_name
+                  item.section_id = this_section.name
                   stype = this_section.type
                end
                -- if it was a class, then if the name is unqualified then it becomes
@@ -373,6 +374,7 @@ function File:finish()
                      end
                      if item.tags.constructor then
                         item.section = item.type
+                        item.section_id = item.type
                      end
                   end
                end
@@ -381,16 +383,20 @@ function File:finish()
                   --this_section.summary = ''
                elseif item.tags.within then
                   item.section = item.tags.within
+                  item.section_id = item.tags.within
                else
                   if item.type == 'function' or item.type == 'lfunction' then
                      section_description = "Methods"
                   end
                   item.section = item.type
+                  item.section_id = item.type
                end
             elseif item.tags.within then -- ad-hoc section...
                item.section = item.tags.within
+               item.section_id = item.tags.within
             else -- otherwise, just goes into the default sections (Functions,Tables,etc)
                item.section = item.type;
+               item.section_id = item.type
             end
 
             item.module = this_mod
