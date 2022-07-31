@@ -73,7 +73,8 @@ function KindMap:__call ()
       end
       i = i + 1
       local type = klass.types_by_kind [kind].type
-      return kind, self[kind], type
+      local summary = klass.summaries_by_kind [kind]
+      return kind, self[kind], type, summary
    end
 end
 
@@ -122,13 +123,15 @@ function KindMap._class_init (klass)
    klass.types_by_kind = {} -- indexed by kind
    klass.descriptions = {} -- optional description for each kind
    klass.items_by_kind = {}  -- some kinds are items
+   klass.summaries_by_kind = {}
 end
 
 
-function KindMap.add_kind (klass,tag,kind,subnames,item)
+function KindMap.add_kind (klass,tag,kind,subnames,item,summary)
    if not klass.types_by_kind[kind] then
       klass.types_by_tag[tag] = kind
       klass.types_by_kind[kind] = {type=tag,subnames=subnames}
+      klass.summaries_by_kind[kind] = summary
       if item then
          klass.items_by_kind[kind] = item
       end

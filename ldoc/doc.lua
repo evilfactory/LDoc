@@ -276,23 +276,30 @@ function File:finish()
          if display_name == 'end' then
             this_mod.section = nil
          else
-            local summary = item.summary:gsub('%.$','')
             local lookup_name
+            local summary
             if doc.class_tag(item.type) then
                display_name = 'Class '..item.name
                lookup_name = item.name
                item.module = this_mod
                this_mod.items.by_name[item.name] = item
             else
-               display_name = summary
-               lookup_name = summary
+               local summary_type = type(item.summary)
+               local name = item.summary
+               if summary_type == "table" then
+                  local item_summary = item.summary
+                  name = item_summary[1]
+                  summary = item_summary[2]
+               end
+               display_name = name
+               lookup_name = name
                item.summary = ''
             end
             item.display_name = display_name
             this_mod.section = item
             -- the purpose of this little hack is to properly distinguish
             -- between built-in kinds and any user-defined kinds.
-            this_mod.kinds:add_kind(display_name,display_name..' ',nil,item)
+            this_mod.kinds:add_kind(display_name,display_name..' ',nil,item,summary)
             this_mod.sections:append(item)
             this_mod.sections.by_name[lookup_name:gsub('%A','_')] = item
          end
@@ -335,6 +342,7 @@ function File:finish()
                local this_section = this_mod.section
                if this_section then
                   item.section = this_section.display_name
+                  item.section_id = this_section.name
                   stype = this_section.type
                end
                -- if it was a class, then if the name is unqualified then it becomes
@@ -366,6 +374,7 @@ function File:finish()
                      end
                      if item.tags.constructor then
                         item.section = item.type
+                        item.section_id = item.type
                      end
                   end
                end
@@ -374,16 +383,20 @@ function File:finish()
                   --this_section.summary = ''
                elseif item.tags.within then
                   item.section = item.tags.within
+                  item.section_id = item.tags.within
                else
                   if item.type == 'function' or item.type == 'lfunction' then
                      section_description = "Methods"
                   end
                   item.section = item.type
+                  item.section_id = item.type
                end
             elseif item.tags.within then -- ad-hoc section...
                item.section = item.tags.within
+               item.section_id = item.tags.within
             else -- otherwise, just goes into the default sections (Functions,Tables,etc)
                item.section = item.type;
+               item.section_id = item.type
             end
 
             item.module = this_mod
