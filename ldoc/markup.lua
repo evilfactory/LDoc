@@ -202,10 +202,13 @@ local function process_multiline_markdown(ldoc, txt, F, filename, deflang)
       else
          local section = F and F.sections[L]
          if section then
-            append(res,('<a name="%s"></a>'):format(section))
+            local anchor = ('<a name="%s"></a>'):format(section)
+            line = resolve_inline_references(ldoc, line, err_item)
+            append(res,line .. anchor)
+         else
+            line = resolve_inline_references(ldoc, line, err_item)
+            append(res,line)
          end
-         line = resolve_inline_references(ldoc, line, err_item)
-         append(res,line)
          line = getline()
       end
    end
